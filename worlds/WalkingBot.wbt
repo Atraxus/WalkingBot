@@ -1,0 +1,77 @@
+#VRML_SIM R2022a utf8
+WorldInfo {
+  title "WalkingRobot"
+}
+Viewpoint {
+  orientation 0.05424618325680077 0.06130633243066948 -0.9966438105993385 1.4520874837680242
+  position -0.1425225029240618 3.7499706866664444 0.5644004502532474
+}
+TexturedBackgroundLight {
+}
+TexturedBackground {
+}
+Floor {
+}
+Robot {
+  translation 0 0.0899998 0.29
+  rotation 1 0 0 1.5708053071795867
+  children [
+    Hinge2Joint {
+      endPoint DEF LeftLeg Solid {
+        translation 0.271543 -0.0702032 -5.21291e-07
+        rotation -0.12942905351200024 -0.9831054064615735 -0.12942905351200024 1.5878253071795863
+        children [
+          DEF LeftLegBody Shape {
+            appearance PBRAppearance {
+              metalness 0
+            }
+            geometry Capsule {
+              height 0.2
+              radius 0.05
+            }
+          }
+        ]
+        boundingObject USE LeftLegBody
+        physics Physics {
+        }
+      }
+    }
+    Hinge2Joint {
+      endPoint DEF RightLeg Solid {
+        translation -0.271543 -0.0702032 -5.21291e-07
+        rotation 0.12943005351228426 -0.9831054064605905 0.12942805351145734 1.5878253071795863
+        children [
+          DEF RightLegBody Shape {
+            appearance PBRAppearance {
+              metalness 0
+            }
+            geometry Capsule {
+              height 0.2
+              radius 0.05
+            }
+          }
+        ]
+        name "solid(1)"
+        boundingObject USE RightLegBody
+        physics Physics {
+        }
+      }
+    }
+    Accelerometer {
+    }
+    DEF Body Shape {
+      appearance PBRAppearance {
+        baseColor 1 0.495445 0.138933
+        metalness 0
+      }
+      geometry Capsule {
+        height 0.3
+        radius 0.14
+      }
+    }
+  ]
+  boundingObject USE Body
+  physics Physics {
+  }
+  controller "WalkingBot"
+}
