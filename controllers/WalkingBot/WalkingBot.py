@@ -1,14 +1,12 @@
-"""WalkingBot controller."""
+from controller import Robot, DistanceSensor
 
-# You may need to import some classes of the controller module. Ex:
-#  from controller import Robot, Motor, DistanceSensor
-from controller import Robot
+TIME_STEP = 32
 
-# create the Robot instance.
 robot = Robot()
 
-# get the time step of the current world.
-timestep = int(robot.getBasicTimeStep())
+accelerometer = robot.getDevice("accelerometer")
+accelerometer.enable(TIME_STEP)
 
-while robot.step(32) != -1:
-    print("Hello World!")
+while robot.step(TIME_STEP) != -1:
+    value = accelerometer.getValues()
+    print("Sensor value is: ", value)
