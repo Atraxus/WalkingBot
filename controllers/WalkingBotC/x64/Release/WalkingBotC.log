@@ -1,0 +1,5 @@
+﻿C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(524,5): warning MSB8029: The Intermediate directory or Output directory cannot reside under the Temporary directory as it could lead to issues with incremental build.
+  WalkingBotC.c
+C:\projects\Uni\KognitiveRobotik\WalkingBot\controllers\WalkingBotC\WalkingBotC.c(10,28): warning C4013: 'wb_device_get_name' undefined; assuming extern returning int
+C:\projects\Uni\KognitiveRobotik\WalkingBot\controllers\WalkingBotC\WalkingBotC.c(10,1): warning C4047: 'initializing': 'const char *' differs in levels of indirection from 'int'
+LINK : fatal error LNK1104: cannot open file 'C:\projects\Uni\KognitiveRobotik\WalkingBot\controllers\WalkingBotC\WalkingBotC.exe'

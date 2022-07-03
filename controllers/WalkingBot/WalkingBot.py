@@ -18,11 +18,6 @@ leftMotor1 = robot.getDevice("LeftLegtMotor1")
 leftMotor2 = robot.getDevice("LeftLegtMotor2")
 rightMotor1 = robot.getDevice("RightLegtMotor1")
 rightMotor2 = robot.getDevice("RightLegtMotor2")
-leftMotor1.setVeloctity(0.0)
-leftMotor2.setVeloctity(0.0)
-rightMotor1.setVeloctity(0.0)
-rightMotor2.setVeloctity(0.0)
-
 
 # Sensors
 accelerometer = robot.getDevice("accelerometer")
