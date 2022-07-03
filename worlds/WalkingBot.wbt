@@ -16,7 +16,17 @@ Robot {
   translation 0 0.0899998 0.29
   rotation 1 0 0 1.5708053071795867
   children [
-    DEF LeftLegJoint Hinge2Joint {
+    DEF Test Hinge2Joint {
+      jointParameters HingeJointParameters {
+      }
+      device [
+        RotationalMotor {
+        }
+      ]
+      device2 [
+        RotationalMotor {
+        }
+      ]
       endPoint DEF LeftLeg Solid {
         translation 0.2715429999999999 -0.07020319999999998 -5.212909999999997e-07
         rotation -0.12942905351200026 -0.9831054064615735 -0.12942905351200024 1.5878253071795863
@@ -36,7 +46,19 @@ Robot {
         }
       }
     }
-    DEF RightLegJoint Hinge2Joint {
+    Hinge2Joint {
+      jointParameters HingeJointParameters {
+      }
+      device [
+        RotationalMotor {
+          name "RightLegtMotor1"
+        }
+      ]
+      device2 [
+        RotationalMotor {
+          name "RightLegtMotor2"
+        }
+      ]
       endPoint DEF RightLeg Solid {
         translation -0.2715429999999998 -0.07020319999999995 -5.212909999999997e-07
         rotation 0.12943005351228426 -0.9831054064605905 0.12942805351145734 1.5878253071795863
