@@ -4,7 +4,7 @@ WorldInfo {
 }
 Viewpoint {
   orientation 0.30414847424973784 0.340289770750464 -0.8897733293003074 1.5753033159072913
-  position -0.2574579862189903 3.0147493368817915 2.288597849032449
+  position -0.5037878957332222 2.971961043381222 2.307945793572235
 }
 TexturedBackgroundLight {
 }
@@ -22,16 +22,24 @@ Robot {
       device [
         RotationalMotor {
           name "LeftLegtMotor1"
+          acceleration 50
+          consumptionFactor 0
+          controlPID 1 5000 10
+          maxVelocity 1000
+          minPosition -0.05266322179572956
+          maxPosition 1000
+          maxTorque 5000
         }
       ]
       device2 [
         RotationalMotor {
           name "LeftLegtMotor2"
+          acceleration 3
         }
       ]
       endPoint DEF LeftLeg Solid {
-        translation 0.2715429999999999 -0.07020319999999998 -5.212909999999997e-07
-        rotation -0.12942905351200026 -0.9831054064615735 -0.12942905351200024 1.5878253071795863
+        translation 0.281202 -0.0727914 -6.11053e-07
+        rotation 4.100929999998433e-07 -0.9999999999996181 -7.716469999997052e-07 1.5707900000003818
         children [
           DEF LeftLegBody Shape {
             appearance PBRAppearance {
@@ -62,8 +70,8 @@ Robot {
         }
       ]
       endPoint DEF RightLeg Solid {
-        translation -0.2715429999999998 -0.07020319999999995 -5.212909999999997e-07
-        rotation 0.12943005351228426 -0.9831054064605905 0.12942805351145734 1.5878253071795863
+        translation -0.281202 -0.0727914 -4.34162e-07
+        rotation 5.80171999999886e-07 -0.9999999999998035 -2.3779799999995328e-07 1.5707853071797828
         children [
           DEF RightLegBody Shape {
             appearance PBRAppearance {

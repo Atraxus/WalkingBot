@@ -26,4 +26,4 @@ accelerometer.enable(TIME_STEP)
 # Main Loop
 while robot.step(TIME_STEP) != -1:
     value = accelerometer.getValues()
-    print("Sensor value is: ", value)
+    #print("Sensor value is: ", value)
