@@ -1,41 +1,53 @@
 from controller import Robot, Device, Node, Motor, Accelerometer, Supervisor
+import torch
 
 
 class WalkingBot(Robot):
-    """Make the NAO robot run as fast as possible."""
     m_timeStep: int
+    
     m_LeftMotor1: Motor
     m_LeftMotor2: Motor
     m_RightMotor1: Motor
     m_RightMotor2: Motor
+    
+    m_Accelerometer: Accelerometer
+
+    # Network
+
 
     def initialize(self):
-        """Get device pointers, enable sensors and set robot initial pose."""
-        # This is the time step (ms) used in the motion file.
         self.timeStep = 32
-        # Get pointers to the shoulder motors.
-        self.m_LeftMotor1 = self.getMotor('LeftLegMotor1')
-        self.m_LeftMotor2 = self.getMotor('LeftLegMotor2')
-        self.m_RightMotor1 = self.getMotor('RightLegMotor1')
-        self.m_RightMotor2 = self.getMotor('RightLegMotor2')
-
+        # Get motors
+        self.m_LeftMotor1 = self.getDevice('LeftLegMotor1')
+        self.m_LeftMotor2 = self.getDevice('LeftLegMotor2')
+        self.m_RightMotor1 = self.getDevice('RightLegMotor1')
+        self.m_RightMotor2 = self.getDevice('RightLegMotor2')
+        # Get sensors
+        self.m_Accelerometer = self.getDevice('Accelerometer')
+        self.m_Accelerometer.enable(self.timeStep)
 
     def run(self):
-        while True:
-            continue
+        while self.step(self.timeStep) != -1:
+            value = self.m_Accelerometer.getValues()
 
+    def printDevices(self):
+        numDevices = self.getNumberOfDevices()
+        print("Number of devices:", numDevices)
+        for i in range(numDevices):
+            print("Device", i, ":", self.getDeviceByIndex(i).getName())
 
+# Torch
+x = torch.rand(5, 3)
+print(x)
+# For testing purposes
 controller = WalkingBot()
+controller.printDevices()
 controller.initialize()
 controller.run()
 
 
 
-# For testing purposes
-# numDevices = robot.getNumberOfDevices()
-# print("Number of devices:", numDevices)
-# for i in range(numDevices):
-#     print("Device", i, ":", robot.getDeviceByIndex(i).getName())
+
 
 
 # Motors

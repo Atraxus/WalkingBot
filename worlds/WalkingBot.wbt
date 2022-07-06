@@ -21,12 +21,12 @@ Robot {
       }
       device [
         RotationalMotor {
-          name "LeftLegtMotor1"
+          name "LeftLegMotor1"
         }
       ]
       device2 [
         RotationalMotor {
-          name "LeftLegtMotor2"
+          name "LeftLegMotor2"
           acceleration 3
         }
       ]
@@ -54,12 +54,12 @@ Robot {
       }
       device [
         RotationalMotor {
-          name "RightLegtMotor1"
+          name "RightLegMotor1"
         }
       ]
       device2 [
         RotationalMotor {
-          name "RightLegtMotor2"
+          name "RightLegMotor2"
         }
       ]
       endPoint DEF RightLeg Solid {
@@ -83,6 +83,7 @@ Robot {
       }
     }
     Accelerometer {
+      name "Accelerometer"
     }
     DEF Body Shape {
       appearance PBRAppearance {
