@@ -22,13 +22,6 @@ Robot {
       device [
         RotationalMotor {
           name "LeftLegtMotor1"
-          acceleration 50
-          consumptionFactor 0
-          controlPID 1 5000 10
-          maxVelocity 1000
-          minPosition -0.05266322179572956
-          maxPosition 1000
-          maxTorque 5000
         }
       ]
       device2 [
