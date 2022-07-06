@@ -1,5 +1,42 @@
 from controller import Robot, Device, Node, Motor, Accelerometer, Supervisor
+from dataclasses import dataclass
 import torch
+
+
+# Input vector of network
+@dataclass
+class InVec:
+    leftAngle1: float
+    leftAngle2: float
+    rightAngle1: float
+    rightAngle2: float
+
+    leftVelocity: float
+    leftVelocity2: float
+    rightVelocity: float
+    rightVelocity2: float
+
+    accelX: float
+    accelY: float
+    accelZ: float
+
+@dataclass
+class OutVec:
+    torqueLeftMotor1: float
+    torqueLeftMotor2: float
+    torqueRightMotor1: float
+    torqueRightMotor2: float
+
+
+# Simple network that connects sensor inputs directly to motor torques.
+class SimpleNetwork(torch.nn.Module):
+    def __init__(self, input_size, output_size):
+        super(SimpleNetwork, self).__init__()
+        self.inoutTransform = torch.nn.Linear(input_size, output_size)
+
+    def forward(self, x):
+        return self.inoutTransform(x)
+
 
 
 class WalkingBot(Robot):
@@ -13,7 +50,7 @@ class WalkingBot(Robot):
     m_Accelerometer: Accelerometer
 
     # Network
-
+    m_network: SimpleNetwork
 
     def initialize(self):
         self.timeStep = 32
@@ -25,6 +62,8 @@ class WalkingBot(Robot):
         # Get sensors
         self.m_Accelerometer = self.getDevice('Accelerometer')
         self.m_Accelerometer.enable(self.timeStep)
+        # Get network
+        self.m_network = SimpleNetwork(12, 4)
 
     def run(self):
         while self.step(self.timeStep) != -1:
