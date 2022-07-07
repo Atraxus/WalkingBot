@@ -3,8 +3,8 @@ WorldInfo {
   title "WalkingRobot"
 }
 Viewpoint {
-  orientation 0.30414847424973784 0.340289770750464 -0.8897733293003074 1.5753033159072913
-  position -0.5037878957332222 2.971961043381222 2.307945793572235
+  orientation 0.2855176993486142 0.38398083447596854 -0.8780879011316653 1.4052772827077105
+  position -3.6288192270363666 9.499832697428719 7.229717218951675
 }
 TexturedBackgroundLight {
 }
@@ -96,8 +96,15 @@ Robot {
       }
     }
   ]
+  name "WalkBot"
   boundingObject USE Body
   physics Physics {
   }
   controller "WalkingBot"
+}
+Robot {
+  translation 0 0 5
+  name "EvoSupervisor"
+  controller "EvolutionSupervisor"
+  supervisor TRUE
 }
