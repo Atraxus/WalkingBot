@@ -50,7 +50,7 @@ class WalkingBot(Robot):
     m_Accelerometer: Accelerometer
 
     # Network
-    m_network: SimpleNetwork
+    m_network: SimpleNetwork # TODO(Jannis): init with specific nn
 
     def initialize(self):
         self.timeStep = 32
@@ -68,6 +68,7 @@ class WalkingBot(Robot):
     def run(self):
         while self.step(self.timeStep) != -1:
             value = self.m_Accelerometer.getValues()
+            #TODO(Jannis): run loop sensordata -> network -> motor torques
 
     def printDevices(self):
         numDevices = self.getNumberOfDevices()
@@ -79,6 +80,7 @@ class WalkingBot(Robot):
 x = torch.rand(5, 3)
 print(x)
 # For testing purposes
+net = SimpleNetwork(12, 4) # TODO(Jannis): random numbers?
 controller = WalkingBot()
 controller.printDevices()
 controller.initialize()
