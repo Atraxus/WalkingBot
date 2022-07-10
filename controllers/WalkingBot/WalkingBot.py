@@ -117,16 +117,16 @@ class WalkingBot(Supervisor):
             # get torque values
             torqueLeftMotor1 = tanh(outVals[0]) * 10
             torqueLeftMotor2 = tanh(outVals[1]) * 10
-            torqueRightMotor1 = tanh(outVals[2]) * 10
-            torqueRightMotor2 = tanh(outVals[3]) * 10
+            # torqueRightMotor1 = tanh(outVals[2]) * 10
+            # torqueRightMotor2 = tanh(outVals[3]) * 10
 
             
 
             # apply torque values
             self.m_LeftMotor1.setTorque(float(torqueLeftMotor1))
             self.m_LeftMotor2.setTorque(float(torqueLeftMotor2))
-            self.m_RightMotor1.setTorque(float(torqueRightMotor1))
-            self.m_RightMotor2.setTorque(float(torqueRightMotor2))
+            self.m_RightMotor1.setTorque(float(torqueLeftMotor1))
+            self.m_RightMotor2.setTorque(float(torqueLeftMotor2))
 
             if self.getTime() > runtime:
                 self.m_LeftMotor1.setTorque(0)
@@ -275,7 +275,7 @@ bot = WalkingBot()
 bot.initialize(timestep)
 
 inputSize = 12
-outputSize = 4
+outputSize = 2
 
 population_size = 20
 networks = []
