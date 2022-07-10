@@ -19,22 +19,30 @@ Robot {
     GPS {
     }
     Hinge2Joint {
-      jointParameters HingeJointParameters {
+      jointParameters DEF LeftParam1 HingeJointParameters {
+      }
+      jointParameters2 DEF LeftParam2 JointParameters {
       }
       device [
+        PositionSensor {
+          name "LeftLegSensor1"
+        }
         RotationalMotor {
           name "LeftLegMotor1"
         }
       ]
       device2 [
+        PositionSensor {
+          name "LeftLegSensor2"
+        }
         RotationalMotor {
           name "LeftLegMotor2"
           acceleration 3
         }
       ]
       endPoint DEF LeftLeg Solid {
-        translation 0.281202 -0.0727914 -6.11053e-07
-        rotation 4.100929999998433e-07 -0.9999999999996181 -7.716469999997052e-07 1.5707900000003818
+        translation 0.281202 -0.0727914000000001 -6.110420178244112e-07
+        rotation 4.1001756358104254e-07 -0.9999999999996183 -7.715715640581736e-07 1.5707900000003818
         children [
           DEF LeftLegBody Shape {
             appearance PBRAppearance {
@@ -52,14 +60,22 @@ Robot {
       }
     }
     Hinge2Joint {
-      jointParameters HingeJointParameters {
+      jointParameters DEF RightParam1 HingeJointParameters {
+      }
+      jointParameters2 DEF RightParam2 JointParameters {
       }
       device [
+        PositionSensor {
+          name "RightLegSensor1"
+        }
         RotationalMotor {
           name "RightLegMotor1"
         }
       ]
       device2 [
+        PositionSensor {
+          name "RightLegSensor2"
+        }
         RotationalMotor {
           name "RightLegMotor2"
         }

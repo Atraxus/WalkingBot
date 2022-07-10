@@ -1,6 +1,6 @@
 from pickle import TRUE
 from time import sleep
-from controller import Robot, Motor, Accelerometer, GPS
+from controller import Supervisor, Motor, Accelerometer, GPS
 from dataclasses import dataclass
 import torch
 import torch.nn.functional as F
@@ -50,7 +50,7 @@ class SimpleNetwork(torch.nn.Module):
         return F.log_softmax(features, dim=1)
 
 
-class WalkingBot(Robot):
+class WalkingBot(Supervisor):
     m_timeStep: int
 
     m_LeftMotor1: Motor
@@ -67,7 +67,7 @@ class WalkingBot(Robot):
 
     def initialize(self, network: SimpleNetwork, timeStep: int = 32):
         self.m_timeStep = timeStep
-        self.m_Network = None  #! robot needs to wait for network in run loop
+        self.m_Network = network 
         # Get motors
         self.m_LeftMotor1 = self.getDevice('LeftLegMotor1')
         self.m_LeftMotor2 = self.getDevice('LeftLegMotor2')
@@ -77,15 +77,25 @@ class WalkingBot(Robot):
         self.m_Accelerometer = self.getDevice('Accelerometer')
         self.m_Accelerometer.enable(timeStep)
         self.m_GPS = self.getDevice('gps')
+        # Get parameters
+        self.m_LeftLegSensor1 = self.getDevice('LeftLegSensor1')
+        self.m_LeftLegSensor1.enable(timeStep)
+        self.m_LeftLegSensor2 = self.getDevice('LeftLegSensor2')
+        self.m_LeftLegSensor2.enable(timeStep)
+        self.m_RightLegSensor1 = self.getDevice('RightLegSensor1')
+        self.m_RightLegSensor1.enable(timeStep)
+        self.m_RightLegSensor2 = self.getDevice('RightLegSensor2')
+        self.m_RightLegSensor2.enable(timeStep)
 
     def run(self, runtime: int):
         while self.step(self.m_timeStep) != -1:
             value = self.m_Accelerometer.getValues()
             # get angles and velocities of motors
-            leftAngle1 = self.m_LeftMotor1.getPositionSensor().getValue()
-            leftAngle2 = self.m_LeftMotor2.getPosition()
-            rightAngle1 = self.m_RightMotor1.getPosition()
-            rightAngle2 = self.m_RightMotor2.getPosition()
+            print(self.m_LeftLegSensor1)
+            leftAngle1 = self.m_LeftLegSensor1.getValue()
+            leftAngle2 = self.m_LeftLegSensor2.getValue()
+            rightAngle1 = self.m_RightLegSensor1.getValue()
+            rightAngle2 = self.m_RightLegSensor2.getValue()
             leftVelocity = self.m_LeftMotor1.getVelocity()
             leftVelocity2 = self.m_LeftMotor2.getVelocity()
             rightVelocity = self.m_RightMotor1.getVelocity()
@@ -94,12 +104,14 @@ class WalkingBot(Robot):
             accelX = value[0]
             accelY = value[1]
             accelZ = value[2]
+            # gain
+            gain = 0.1
             # create input vector
-            inVec = np.array([leftAngle1, leftAngle2, rightAngle1, rightAngle2, leftVelocity, leftVelocity2, rightVelocity,
-                                rightVelocity2, accelX, accelY, accelZ])
+            inVec = torch.Tensor([leftAngle1, leftAngle2, rightAngle1, rightAngle2, leftVelocity, leftVelocity2, rightVelocity,
+                                rightVelocity2, accelX, accelY, accelZ, gain])
 
             # network
-            outVals = self.m_Network.forward(torch.from_numpy(inVec).float())
+            outVals = self.m_Network.forward(inVec)
 
             # get torque values
             torqueLeftMotor1 = outVals[0][0]
@@ -215,7 +227,9 @@ runtime = 5
 
 for _ in range(population_size):
     weights = np.random.rand(inputSize, outputSize) # TODO(Jannis): add negative values
+    print(weights)
     biases = np.random.rand(outputSize)
+    print(biases)
     net = SimpleNetwork(inputSize, outputSize, weights, biases)
     networks.append(net)
 
