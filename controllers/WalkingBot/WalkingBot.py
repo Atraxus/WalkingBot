@@ -1,3 +1,4 @@
+from math import tanh
 from pickle import TRUE
 from time import sleep
 from controller import Supervisor, Motor, Accelerometer, GPS
@@ -22,6 +23,7 @@ import time
 #     accelX: float
 #     accelY: float
 #     accelZ: float
+#     gain: float
 #   OutVec
 #     torqueLeftMotor1: float
 #     torqueLeftMotor2: float
@@ -77,6 +79,7 @@ class WalkingBot(Supervisor):
         self.m_Accelerometer = self.getDevice('Accelerometer')
         self.m_Accelerometer.enable(timeStep)
         self.m_GPS = self.getDevice('gps')
+        self.m_GPS.enable(timeStep)
         # Get parameters
         self.m_LeftLegSensor1 = self.getDevice('LeftLegSensor1')
         self.m_LeftLegSensor1.enable(timeStep)
@@ -88,6 +91,8 @@ class WalkingBot(Supervisor):
         self.m_RightLegSensor2.enable(timeStep)
 
     def run(self, runtime: int):
+        # Get start time
+        startTime = self.getTime()
         while self.step(self.m_timeStep) != -1:
             value = self.m_Accelerometer.getValues()
             # get angles and velocities of motors
@@ -112,13 +117,13 @@ class WalkingBot(Supervisor):
             # network
             outVals = self.m_Network.forward(inVec.float())
 
-            print(outVals)
-
             # get torque values
-            torqueLeftMotor1 = outVals[0]
-            torqueLeftMotor2 = outVals[1]
-            torqueRightMotor1 = outVals[2]
-            torqueRightMotor2 = outVals[3]
+            torqueLeftMotor1 = tanh(outVals[0]) * 10
+            torqueLeftMotor2 = tanh(outVals[1]) * 10
+            torqueRightMotor1 = tanh(outVals[2]) * 10
+            torqueRightMotor2 = tanh(outVals[3]) * 10
+
+            
 
             # apply torque values
             self.m_LeftMotor1.setTorque(float(torqueLeftMotor1))
@@ -126,12 +131,13 @@ class WalkingBot(Supervisor):
             self.m_RightMotor1.setTorque(float(torqueRightMotor1))
             self.m_RightMotor2.setTorque(float(torqueRightMotor2))
 
-        if self.getTime() > runtime:
-            self.m_LeftMotor1.setTorque(0)
-            self.m_LeftMotor2.setTorque(0)
-            self.m_RightMotor1.setTorque(0)
-            self.m_RightMotor2.setTorque(0)
-            return
+            if self.getTime() - startTime > runtime:
+                print("Elapsed time:", self.getTime() - startTime)
+                self.m_LeftMotor1.setTorque(0)
+                self.m_LeftMotor2.setTorque(0)
+                self.m_RightMotor1.setTorque(0)
+                self.m_RightMotor2.setTorque(0)
+                return
 
     def printDevices(self):
         numDevices = self.getNumberOfDevices()
@@ -140,17 +146,13 @@ class WalkingBot(Supervisor):
             print("\tDevice", i, ":", self.getDeviceByIndex(i).getName())
 
 
-############################## new ##################################
-# I don't know if the following should be done in your run, relocate if necessary
-# das haut von der struktur noch nicht hin, class und defs müssen noch geordnet werden
-
-def select(agents, selection_size: int = 10):
+def select(population: list, selection_size: int = 10):
     # different approaches possible, maybe google
     # here for know: only select x first, others die and are not used anymore
-    agents = sorted(agents, key=lambda agent: agent.fitness, reverse=False)
-    # get number of agents according to selection size
-    agents = agents[:selection_size]
-    return agents
+    population = sorted(population, key=lambda agent: agent.fitness, reverse=False)
+    # get number of population according to selection size
+    population = population[:selection_size]
+    return population
 
 
 def spliceLists(parent1: np.ndarray, parent2: np.ndarray, ):
@@ -160,13 +162,13 @@ def spliceLists(parent1: np.ndarray, parent2: np.ndarray, ):
     values2 = parent2.ravel()
 
     # randomly choose crossover point
-    split = random.ragendint(0, len(values1) - 1)
+    split = random.randint(0, len(values1) - 1)
 
-    returnValues1 = np.asrray(values1[0:split].tolist() + values2[split:].tolist())
-    returnValues2 = np.array(values1[0:split].tolist() + values2[split:].tolist())
+    returnValues1 = np.asarray(values1[0:split].tolist() + values2[split:].tolist())
+    returnValues2 = np.asarray(values1[0:split].tolist() + values2[split:].tolist())
 
     # convert back to tensor, maybe gotta reshape
-    return torch.from_numpy(returnValues1), torch.from_numpy(returnValues2)
+    return returnValues1, returnValues2
 
 
 def crossover(population: list, population_size: int):
@@ -183,13 +185,16 @@ def crossover(population: list, population_size: int):
         parent1 = random.choice(population)
         parent2 = random.choice(population)
         # get dimensions of parent
-        inSize = len(parent1.m_inputSize)
-        outSize = len(parent1.m_outputSize)
+        inSize = parent1.m_inputSize
+        outSize = parent1.m_outputSize
 
         # get new crossover weights
-        weights1, weights2 = spliceLists(parent1.inOutTransform.weight, parent2.inoutTransform.weight)
+        weights1, weights2 = spliceLists(parent1.inoutTransform.weight, parent2.inoutTransform.weight)
         # get new crossover biases
-        biases1, biases2 = spliceLists(parent1.inOutTransform.bias, parent2.inOutTransform.bias)
+        biases1, biases2 = spliceLists(parent1.inoutTransform.bias, parent2.inoutTransform.bias)
+        
+        weights1 = weights1.reshape(outSize, inSize)
+        weights2 = weights2.reshape(outSize, inSize)
 
         child1 = SimpleNetwork(inSize, outSize, weights1, biases1)
         child2 = SimpleNetwork(inSize, outSize, weights2, biases2)
@@ -204,11 +209,11 @@ def mutation(population: list, mutation_rate: float = 0.1):
     # add the offspring to the population
     for pop in population:
         # mutate with a very low propability
-        weights = pop.inOutTransform.weight.data
+        weights = pop.inoutTransform.weight.data
+        print(weights)
         for i in range(len(weights)):
-            for j in range(len(weights[i])):
-                if random.uniform(0.0, 1.0) < mutation_rate:
-                    weights[i][j] = random.random()
+            if random.uniform(0.0, 1.0) < mutation_rate:
+                weights[i] = random.uniform(-1.0, 1.0)
     return population
 
 
@@ -233,9 +238,9 @@ runtime = 5
 
 for _ in range(population_size):
     print(_)
-    weights = np.random.rand(outputSize, inputSize)  # TODO(Jannis): add negative values
+    weights = np.random.uniform(-1.0, 1.0, (outputSize, inputSize))  # TODO(Jannis): add negative values
     print("weights:", weights)
-    biases = np.random.rand(outputSize)
+    biases = np.random.uniform(-1.0, 1.0, outputSize)
     print("biases:", biases)
     net = SimpleNetwork(inputSize, outputSize, weights, biases)
     networks.append(net)
@@ -249,18 +254,18 @@ for i in range(epochs):
         print("\tRunning network:", j)
         bot.initialize(net, timestep)
         bot.run(runtime)
-        position = bot.getPosition()
-        fitness = calculate_fitness(position[0], runtime)
+        position = bot.m_GPS.getValues()
+        print("\t\tPosition:", position)
+        fitness = calculate_fitness(position[1], runtime)
         evaluations.append(fitness)
+        # reset simulation
+        bot.simulationReset()
 
     # select best population
-    networks = select(networks, population_size, 5)
+    networks = select(networks, 5)
 
     # crossover population
     networks = crossover(networks, population_size)
 
     # mutate population
-    networks = mutation(networks, 0.05)
-
-    # reset simulation
-    bot.simulationReset()
+    networks = mutation(networks, 0.1)
