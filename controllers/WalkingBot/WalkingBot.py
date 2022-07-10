@@ -1,13 +1,11 @@
 from math import tanh
-from pickle import TRUE
 from time import sleep
 from controller import Supervisor, Motor, Accelerometer, GPS
-from dataclasses import dataclass
 import torch
 import torch.nn.functional as F
 import numpy as np
 import random
-import time
+import matplotlib.pyplot as plt
 
 
 # Network defines:
@@ -35,15 +33,17 @@ import time
 class SimpleNetwork(torch.nn.Module):
     m_inputSize: int
     m_outputSize: int
+    m_fitness: float
 
-    def __init__(self, input_size: int, output_size: int, weights: np.ndarray, biases: np.ndarray):
+    def __init__(self, input_size: int, output_size: int, weights: torch.Tensor, biases: torch.Tensor):
         self.m_inputSize = input_size
         self.m_outputSize = output_size
+        self.m_fitness = 0.0
         super(SimpleNetwork, self).__init__()
         # maybe we should add another layer? one could be to weak for evolution maybe
         self.inoutTransform = torch.nn.Linear(input_size, output_size)
-        self.inoutTransform.weight.data = torch.from_numpy(weights).float()
-        self.inoutTransform.bias.data = torch.from_numpy(biases).float()
+        self.inoutTransform.weight.data = weights
+        self.inoutTransform.bias.data = biases
         self.fitness = 0
 
     def forward(self, x: torch.Tensor):
@@ -65,11 +65,10 @@ class WalkingBot(Supervisor):
     m_GPS: GPS
 
     # Network
-    m_Network: SimpleNetwork  # TODO(Jannis): init with specific nn
+    m_Network: SimpleNetwork
 
-    def initialize(self, network: SimpleNetwork, timeStep: int = 32):
+    def initialize(self, timeStep: int = 32):
         self.m_timeStep = timeStep
-        self.m_Network = network
         # Get motors
         self.m_LeftMotor1 = self.getDevice('LeftLegMotor1')
         self.m_LeftMotor2 = self.getDevice('LeftLegMotor2')
@@ -91,8 +90,6 @@ class WalkingBot(Supervisor):
         self.m_RightLegSensor2.enable(timeStep)
 
     def run(self, runtime: int):
-        # Get start time
-        startTime = self.getTime()
         while self.step(self.m_timeStep) != -1:
             value = self.m_Accelerometer.getValues()
             # get angles and velocities of motors
@@ -131,8 +128,7 @@ class WalkingBot(Supervisor):
             self.m_RightMotor1.setTorque(float(torqueRightMotor1))
             self.m_RightMotor2.setTorque(float(torqueRightMotor2))
 
-            if self.getTime() - startTime > runtime:
-                print("Elapsed time:", self.getTime() - startTime)
+            if self.getTime() > runtime:
                 self.m_LeftMotor1.setTorque(0)
                 self.m_LeftMotor2.setTorque(0)
                 self.m_RightMotor1.setTorque(0)
@@ -145,11 +141,12 @@ class WalkingBot(Supervisor):
         for i in range(numDevices):
             print("\tDevice", i, ":", self.getDeviceByIndex(i).getName())
 
+def net_fitness(net: SimpleNetwork):
+    return net.m_fitness
 
 def select(population: list, selection_size: int = 10):
-    # different approaches possible, maybe google
-    # here for know: only select x first, others die and are not used anymore
-    population = sorted(population, key=lambda agent: agent.fitness, reverse=False)
+    # sort by fitness
+    population.sort(key=net_fitness, reverse=True)
     # get number of population according to selection size
     population = population[:selection_size]
     return population
@@ -171,7 +168,7 @@ def spliceLists(parent1: np.ndarray, parent2: np.ndarray, ):
     return returnValues1, returnValues2
 
 
-def crossover(population: list, population_size: int):
+def crossover(currPopulation: list, population_size: int):
     # cross two individuals, I guess this should be done with all selected
     # so f.e. 4 individuals: 1 with 2, 1 with 3, 1 with 4, 2 with 3, 2 with 4, 3 with 4 = 6*2 = 12 (see below)
     # common crossover technique: choose crossover point randomly
@@ -181,9 +178,9 @@ def crossover(population: list, population_size: int):
     # crossover point: 2
     # child 1: [001111], child 2: [110000]
     offspring = []
-    for _ in range((population_size - len(population)) // 2):
-        parent1 = random.choice(population)
-        parent2 = random.choice(population)
+    for _ in range(int((population_size - len(currPopulation))/2)):
+        parent1 = random.choice(currPopulation)
+        parent2 = random.choice(currPopulation)
         # get dimensions of parent
         inSize = parent1.m_inputSize
         outSize = parent1.m_outputSize
@@ -196,12 +193,54 @@ def crossover(population: list, population_size: int):
         weights1 = weights1.reshape(outSize, inSize)
         weights2 = weights2.reshape(outSize, inSize)
 
+        # Convert to tensor
+        weights1 = torch.from_numpy(weights1).float()
+        weights2 = torch.from_numpy(weights2).float()
+        biases1 = torch.from_numpy(biases1).float()
+        biases2 = torch.from_numpy(biases2).float()
+
         child1 = SimpleNetwork(inSize, outSize, weights1, biases1)
         child2 = SimpleNetwork(inSize, outSize, weights2, biases2)
 
         offspring.append(child1)
         offspring.append(child2)
     return offspring
+
+def crossover2(currPopulation: list, population_size: int):
+    offspring = []
+    for _ in range(population_size - len(currPopulation)):
+        parent1 = random.choice(currPopulation)
+        parent2 = random.choice(currPopulation)
+        parent1Weights = parent1.inoutTransform.weight.data
+        parent2Weights = parent2.inoutTransform.weight.data
+        parent1Biases = parent1.inoutTransform.bias.data
+        parent2Biases = parent2.inoutTransform.bias.data
+        # get dimensions of parent
+        inSize = parent1.m_inputSize
+        outSize = parent1.m_outputSize
+
+        childWeights = torch.zeros(outSize, inSize)
+        # get new crossover weights
+        for i in range(outSize):
+            for j in range(inSize):
+                if random.random() < 0.5:
+                    childWeights[i][j] = parent1Weights[i][j]
+                else:
+                    childWeights[i][j] = parent2Weights[i][j]
+        # get new crossover biases
+        childBiases = torch.zeros(outSize)
+        for i in range(outSize):
+            if random.random() < 0.5:
+                childBiases[i] = parent1Biases[i]
+            else:
+                childBiases[i] = parent2Biases[i]
+        childWeights = childWeights.reshape(outSize, inSize)
+        child = SimpleNetwork(inSize, outSize, childWeights, childBiases)
+        offspring.append(child)
+    return offspring
+
+
+
 
 
 def mutation(population: list, mutation_rate: float = 0.1):
@@ -210,7 +249,6 @@ def mutation(population: list, mutation_rate: float = 0.1):
     for pop in population:
         # mutate with a very low propability
         weights = pop.inoutTransform.weight.data
-        print(weights)
         for i in range(len(weights)):
             if random.uniform(0.0, 1.0) < mutation_rate:
                 weights[i] = random.uniform(-1.0, 1.0)
@@ -223,49 +261,99 @@ def calculate_fitness(meters_walked, time, penalty=0):
     # save score in object? (neural network)
     return (meters_walked / time) - penalty
 
+def max_fitness(networks):
+    max_fitness = 0
+    for net in networks:
+        if net.m_fitness > max_fitness:
+            max_fitness = net.m_fitness
+    return max_fitness
 
 # General definitions
 print("Starting...")
-bot = WalkingBot()
 timestep = 10
+bot = WalkingBot()
+bot.initialize(timestep)
+
 inputSize = 12
 outputSize = 4
 
-population_size = 10
+population_size = 20
 networks = []
-epochs = 100
-runtime = 5
+best_fitnesses = []
+epochs = 300
+runtime = 10
 
 for _ in range(population_size):
-    print(_)
-    weights = np.random.uniform(-1.0, 1.0, (outputSize, inputSize))  # TODO(Jannis): add negative values
-    print("weights:", weights)
-    biases = np.random.uniform(-1.0, 1.0, outputSize)
-    print("biases:", biases)
+    weights = np.random.uniform(-0.5, 0.5, (outputSize, inputSize))  # TODO(Jannis): add negative values
+    biases = np.random.uniform(-0.5, 0.5, outputSize)
+    weights = torch.from_numpy(weights).float()
+    biases = torch.from_numpy(biases).float()
     net = SimpleNetwork(inputSize, outputSize, weights, biases)
     networks.append(net)
 
+bot.simulationSetMode(2)
 for i in range(epochs):
     print("Epoch:", i)
-    evaluations = []
 
     # run for each pop in population
     for j, net in enumerate(networks):
-        print("\tRunning network:", j)
-        bot.initialize(net, timestep)
+        bot.m_Network = net
         bot.run(runtime)
         position = bot.m_GPS.getValues()
-        print("\t\tPosition:", position)
+        print("\tNetwork: %d - travelled: %.2f meters" % (j, position[1]))
         fitness = calculate_fitness(position[1], runtime)
-        evaluations.append(fitness)
+        networks[j].m_fitness = fitness
         # reset simulation
         bot.simulationReset()
 
+    # get best fitness and save to best fitnesses
+    best_fitness = max_fitness(networks)
+    best_fitnesses.append(best_fitness)
+
     # select best population
-    networks = select(networks, 5)
+    networks = select(networks, 10)
 
     # crossover population
-    networks = crossover(networks, population_size)
+    offspring = crossover(networks, population_size)
+    networks = networks + offspring
 
     # mutate population
     networks = mutation(networks, 0.1)
+
+def plot_fitness(fitnesses):
+    # pass list of best fitnesses (best per gen)
+    generations = list(range(1,epochs+1))
+    plt.plot(generations, fitnesses)
+    plt.title('Fitness per Generation')
+    plt.xlabel('Generations')
+    plt.ylabel('Fitness')
+    plt.savefig('fitness_per_gen.png')
+
+print("Exporting fitness plot... ")
+plot_fitness(best_fitnesses)
+
+bot.simulationReset()
+bot.simulationSetMode(1)
+
+
+# select best, worst and median networks
+networks.sort(key=net_fitness, reverse=True)
+best = networks[0]
+worst = networks[-1]
+median = networks[int(population_size/2)]
+videoNets = [best, worst, median]
+
+for j, net in enumerate(videoNets):
+    # wait for move to be ready
+    while bot.movieIsReady() == 0:
+        sleep(1)
+        pass
+
+    filename = "net_" + str(j) + ".mp4"
+    # record video
+    bot.movieStartRecording(filename, 1920, 1080, 1, 80, 1, True)
+    bot.m_Network = net
+    bot.run(runtime)
+    bot.movieStopRecording()
+
+    bot.simulationReset()
