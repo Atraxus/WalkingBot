@@ -3,8 +3,8 @@ WorldInfo {
   title "WalkingRobot"
 }
 Viewpoint {
-  orientation 0.2855176993486142 0.38398083447596854 -0.8780879011316653 1.4052772827077105
-  position -3.6288192270363666 9.499832697428719 7.229717218951675
+  orientation 0.21612807275724416 0.45392066686891885 -0.864433157829751 1.0069258578830629
+  position -5.484479310067069 4.578895171702545 4.547916048853525
 }
 TexturedBackgroundLight {
 }
@@ -13,9 +13,11 @@ TexturedBackground {
 Floor {
 }
 Robot {
-  translation 0 0.0899998 0.29
+  translation 0 0 0.15
   rotation 1 0 0 1.5708053071795867
   children [
+    GPS {
+    }
     Hinge2Joint {
       jointParameters HingeJointParameters {
       }
@@ -101,10 +103,5 @@ Robot {
   physics Physics {
   }
   controller "WalkingBot"
-}
-Robot {
-  translation 0 0 5
-  name "EvoSupervisor"
-  controller "EvolutionSupervisor"
   supervisor TRUE
 }
