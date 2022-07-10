@@ -8,6 +8,7 @@ import numpy as np
 import random
 import time
 
+
 # Network defines:
 #   InVec
 #     leftAngle1: float
@@ -39,15 +40,15 @@ class SimpleNetwork(torch.nn.Module):
         super(SimpleNetwork, self).__init__()
         # maybe we should add another layer? one could be to weak for evolution maybe
         self.inoutTransform = torch.nn.Linear(input_size, output_size)
-        self.inoutTransform.weight.data = torch.from_numpy(weights)
-        self.inoutTransform.bias.data = torch.from_numpy(biases)
+        self.inoutTransform.weight.data = torch.from_numpy(weights).float()
+        self.inoutTransform.bias.data = torch.from_numpy(biases).float()
         self.fitness = 0
 
     def forward(self, x: torch.Tensor):
         # send through linear
         features = self.inoutTransform(x)
         # return softmax classification (can also use relu or or or..., dim may has to be adjusted)
-        return F.log_softmax(features, dim=1)
+        return F.log_softmax(features, dim=0)
 
 
 class WalkingBot(Supervisor):
@@ -64,10 +65,9 @@ class WalkingBot(Supervisor):
     # Network
     m_Network: SimpleNetwork  # TODO(Jannis): init with specific nn
 
-
     def initialize(self, network: SimpleNetwork, timeStep: int = 32):
         self.m_timeStep = timeStep
-        self.m_Network = network 
+        self.m_Network = network
         # Get motors
         self.m_LeftMotor1 = self.getDevice('LeftLegMotor1')
         self.m_LeftMotor2 = self.getDevice('LeftLegMotor2')
@@ -91,7 +91,6 @@ class WalkingBot(Supervisor):
         while self.step(self.m_timeStep) != -1:
             value = self.m_Accelerometer.getValues()
             # get angles and velocities of motors
-            print(self.m_LeftLegSensor1)
             leftAngle1 = self.m_LeftLegSensor1.getValue()
             leftAngle2 = self.m_LeftLegSensor2.getValue()
             rightAngle1 = self.m_RightLegSensor1.getValue()
@@ -108,10 +107,12 @@ class WalkingBot(Supervisor):
             gain = 0.1
             # create input vector
             inVec = torch.Tensor([leftAngle1, leftAngle2, rightAngle1, rightAngle2, leftVelocity, leftVelocity2, rightVelocity,
-                                rightVelocity2, accelX, accelY, accelZ, gain])
+                 rightVelocity2, accelX, accelY, accelZ, gain])
 
             # network
-            outVals = self.m_Network.forward(inVec)
+            outVals = self.m_Network.forward(inVec.float())
+
+            print(outVals)
 
             # get torque values
             torqueLeftMotor1 = outVals[0][0]
@@ -125,19 +126,19 @@ class WalkingBot(Supervisor):
             self.m_RightMotor1.setTorque(torqueRightMotor1)
             self.m_RightMotor2.setTorque(torqueRightMotor2)
 
-        if (self.getTime() > runtime):
+        if self.getTime() > runtime:
             self.m_LeftMotor1.setTorque(0)
             self.m_LeftMotor2.setTorque(0)
             self.m_RightMotor1.setTorque(0)
             self.m_RightMotor2.setTorque(0)
             return
 
-
     def printDevices(self):
         numDevices = self.getNumberOfDevices()
         print("Number of devices:", numDevices)
         for i in range(numDevices):
             print("\tDevice", i, ":", self.getDeviceByIndex(i).getName())
+
 
 ############################## new ##################################
 # I don't know if the following should be done in your run, relocate if necessary
@@ -150,6 +151,7 @@ def select(agents, selection_size: int = 10):
     # get number of agents according to selection size
     agents = agents[:selection_size]
     return agents
+
 
 def spliceLists(parent1: np.ndarray, parent2: np.ndarray, ):
     # weights of neural network of agent
@@ -165,6 +167,7 @@ def spliceLists(parent1: np.ndarray, parent2: np.ndarray, ):
 
     # convert back to tensor, maybe gotta reshape
     return torch.from_numpy(returnValues1), torch.from_numpy(returnValues2)
+
 
 def crossover(population: list, population_size: int):
     # cross two individuals, I guess this should be done with all selected
@@ -195,7 +198,8 @@ def crossover(population: list, population_size: int):
         offspring.append(child2)
     return offspring
 
-def mutation(population: list, mutation_rate : float = 0.1):
+
+def mutation(population: list, mutation_rate: float = 0.1):
     # after crossover mutation is common: flip a few parameters of offspring with very low propability
     # add the offspring to the population
     for pop in population:
@@ -207,11 +211,13 @@ def mutation(population: list, mutation_rate : float = 0.1):
                     weights[i][j] = random.random()
     return population
 
-def calculate_fitness(meters_walked, time, penalty = 0):
+
+def calculate_fitness(meters_walked, time, penalty=0):
     # penalty for falling or standing still
     # walked meters, time (or constant?)
     # save score in object? (neural network)
     return (meters_walked / time) - penalty
+
 
 # General definitions
 print("Starting...")
@@ -226,10 +232,11 @@ epochs = 100
 runtime = 5
 
 for _ in range(population_size):
-    weights = np.random.rand(inputSize, outputSize) # TODO(Jannis): add negative values
-    print(weights)
+    print(_)
+    weights = np.random.rand(outputSize, inputSize)  # TODO(Jannis): add negative values
+    print("weights:", weights)
     biases = np.random.rand(outputSize)
-    print(biases)
+    print("biases:", biases)
     net = SimpleNetwork(inputSize, outputSize, weights, biases)
     networks.append(net)
 
