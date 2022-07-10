@@ -115,16 +115,16 @@ class WalkingBot(Supervisor):
             print(outVals)
 
             # get torque values
-            torqueLeftMotor1 = outVals[0][0]
-            torqueLeftMotor2 = outVals[0][1]
-            torqueRightMotor1 = outVals[0][2]
-            torqueRightMotor2 = outVals[0][3]
+            torqueLeftMotor1 = outVals[0]
+            torqueLeftMotor2 = outVals[1]
+            torqueRightMotor1 = outVals[2]
+            torqueRightMotor2 = outVals[3]
 
             # apply torque values
-            self.m_LeftMotor1.setTorque(torqueLeftMotor1)
-            self.m_LeftMotor2.setTorque(torqueLeftMotor2)
-            self.m_RightMotor1.setTorque(torqueRightMotor1)
-            self.m_RightMotor2.setTorque(torqueRightMotor2)
+            self.m_LeftMotor1.setTorque(float(torqueLeftMotor1))
+            self.m_LeftMotor2.setTorque(float(torqueLeftMotor2))
+            self.m_RightMotor1.setTorque(float(torqueRightMotor1))
+            self.m_RightMotor2.setTorque(float(torqueRightMotor2))
 
         if self.getTime() > runtime:
             self.m_LeftMotor1.setTorque(0)
